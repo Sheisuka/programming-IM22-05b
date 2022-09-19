@@ -1,18 +1,15 @@
 program CreatingMyPos;
-    function myLength(string_: string): integer;
+    function myLength(const stringMyLength: string): integer;
         var 
             i: integer = 1;
-            symbol: string;
         begin
             while (True) do
             begin
-                symbol := string_[i];
-                if (symbol <> char(0)) then begin
+                if (stringMyLength[i] <> char(0)) then begin
                     i += 1;
                     end
                 else begin
-                    myLength := i - 1;
-                    Exit;
+                    Exit(i - 1);
                     end
             end;
         end;
@@ -20,7 +17,7 @@ program CreatingMyPos;
     
     function myCopy(string_: string; from_, to_: integer): string;
         var 
-            Result: string;
+            Result: string = '';
             i: integer;
         begin
             for i := from_ to to_ do begin
@@ -30,19 +27,16 @@ program CreatingMyPos;
         end;
 
 
-    function myPos(string_, substring: string; p: integer): integer;
+    function myPos(const string_: string; const substring: string): integer;
+        var
+            i: integer;
         begin
-            if (myLength(string_) < myLength(substring)) then begin
-                myPos := 0;
-            end
-            else if (string_ = substring) then begin
-                myPos := p;
-                Exit;
-                end
-            else begin
-                myPos := myPos(myCopy(string_, 2, myLength(string_)), substring, p + 1);
-                end
+            for i := 1 to myLength(string_) - myLength(substring) + 1 do begin
+                writeln(myCopy(string_, i, i + myLength(substring) - 1));
+                if (myCopy(string_, i, i + myLength(substring) - 1) = substring) then
+                    Exit(i);
+            end;
+            Exit(0)
         end;
 begin
-    writeln(myPos('222111', '111', 1));
 end.
