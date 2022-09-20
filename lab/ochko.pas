@@ -24,7 +24,7 @@ var
     
     
     procedure getRandomPlayer();
-    beging
+    begin
         if (random(2) = 1) then
             currentPlayer := 1
         else 
