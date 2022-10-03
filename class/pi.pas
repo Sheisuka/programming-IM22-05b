@@ -1,35 +1,36 @@
-program Buffon;
+program PiProgram;
 
 // Объявленине переменных
 var 
-    l, x1, y1, x2, y2, x3, y3, yMid, dist, pi: real;
-    x0: real = 0;
-    y0: real = 0;
     answer: char;
-    count, xMid, degrees, h, hitCount, i, m, method: integer;
+    method: integer;
+    pi: real;
 
 
-// Метод Бюффона
     function Buffon(): real;
+    var 
+        l, yMid, dist1, pi, h, Xmid, m, dist2: real;
+        x0: real := 0;
+        y0: real := 0;
+        count, degrees, hitCount, method: integer;
     begin
-        x1 := x0;
-        y1 := m;
-        x2 := m;
-        y2 := m;
-        x3 := m;
-        y3 := y0;
+        writeln('Введите l - длину иголки и h - расстояние между полосками; l < h; 2 * l > h ');
+        read(l, h);
+        writeln('Введите длину стороны ');
+        read(m);
     
         repeat
             writeln('Введите количество бросков иголки');
-            read(count);
+            readln(count);
             hitCount := 0;
-            for i := 1 to count do
+            for var i := 1 to count do
                 begin
-                    xMid := Random(m + 1);
-                    yMid := Random(m + 1);
-                    degrees := Random(180);
-                    dist := (yMid / h) - trunc(yMid / h);
-                    if (dist < (l / 2) * cos(2 * 3.14 * degrees / 360)) then
+                    xMid := Random(m);
+                    yMid := Random(m);
+                    degrees := Random(91);
+                    dist1 := Min(abs(yMid - h * trunc(yMid / h)), abs(yMid - h * round(yMid / h)));
+                    //writeln(dist1, ' ', yMid);
+                    if (dist1 < abs((l / 2) * cos(2 * 3.14159 * degrees / 360))) then
                         hitCount += 1;
                 end;
             pi := (2 * l * count) / (hitCount * h);
@@ -37,14 +38,50 @@ var
             writeln('Хотите повторить с другим количеством бросков? Y/N');
             read(answer);
         until (answer = 'N');
-        Exit(pi);
+        Buffon := pi;
     end;
+    
+    function Leibniz(): real;
+    var
+        denominator: integer := 1;
+        numerator: integer := 4;
+        pi: real;
+        count: integer;
+        sign: integer := 1;
+    begin
+      writeln('Введите необходимую точность');
+      read(count);
+      for var i := 1 to count do
+      begin
+        pi += numerator / denominator * sign;
+        denominator += 2;
+        sign := sign * (-1);
+      end;
+      Leibniz := pi;
+    end;
+    
+    function Wallis(): real;
+    var
+        pi: real := 1;
+        denominator: integer := 1;
+        numerator: integer := 2;
+        count: integer;
+    begin
+      writeln('Введите необходимую точность');
+      read(count);
+      for var i := 1 to count do
+      begin
+        //writeln(numerator, ' / ', denominator, ' ', numerator, ' / ', denominator + 2);
+          pi := pi * (numerator / denominator);
+          pi := pi * (numerator / (denominator + 2));
+          numerator += 2;
+          denominator += 2;
+      end;
+        Wallis := pi * 2;
+    end;
+    
 begin
     randomize;
-    writeln('Введите l - длину иголки и h - расстояние между полосками; l < h ');
-    read(l, h);
-    writeln('Введите длину стороны ');
-    read(m);
     writeln('Выберите метод');
     read(method);
     case method of
@@ -54,9 +91,11 @@ begin
             end;
         2:  
             begin
-                writeln('2');
+                writeln(Leibniz());
             end;
-        else
-            writeln('3');
+        3:
+            begin
+                writeln(Wallis());
+            end;
         end;
 end.
