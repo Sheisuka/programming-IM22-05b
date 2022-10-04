@@ -1,49 +1,66 @@
 program Matrix;
 var
-    matr: array[1..4] of array[1..4] of integer;
+    matr: array[,] of integer;
+    cols, rows: integer;
+    elements: array of integer;
+    
+    procedure getDimension;
+    begin
+      writeln('Введите количество столбцов и строк');
+      readln(cols, rows);
+      setLength(matr, cols, rows);
+      setLength(elements, cols * rows);
+    end;
     
     procedure fillRandom;
-    var i, j: integer;
+    var
+        element: integer;
+        element_i: integer;
     begin
         randomize;
-        for i := 1 to 4 do begin
-            for j := 1 to 4 do begin
-                matr[i, j] := Random(10);
+        for var i := 0 to cols - 1 do begin
+            for var j := 0 to rows - 1 do begin
+                element := Random(10);
+                matr[i, j] := element;
+                elements[element_i] := element;
+                element_i += 1;
             end;
         end;
     end;
     
     procedure printMatrix;
-    var i, j: integer;
     begin
-        for i:= 1 to 4 do begin
-            for j := 1 to 4 do begin
-                write(matr[i, j]:2);
+        for var i:= 0 to cols - 1 do begin
+            for var j := 0 to rows - 1 do begin
+                write(matr[i, j]:3);
             end;
             writeln;
         end;
         writeln;
     end;
     
-    procedure printBySpiral;
+    procedure goSpiral(action: integer);
     var 
         steps: integer = 1;
-        i: integer = 1;
-        j: integer = 1;
-        iBeg: integer = 1; iFin: integer = 4; jBeg: integer = 1; jFin: integer = 4;
+        i: integer = 0;
+        j: integer = 0;
+        iBeg: integer = 0; iFin: integer = rows - 1; jBeg: integer = 0; jFin: integer = cols - 1;
     begin
-        while (steps < 4 * 4 + 1) do
+        while (steps < rows * cols  + 1) do
             begin
-                write(matr[i, j]:2);
-                if ((i = ibeg) and (j < jFin)) then
+                if (action = 1) then
+                  write(matr[i, j]:3)
+                else 
+                    matr[i, j] := elements[steps - 1];
+                if ((i = iBeg) and (j < jFin)) then
                     j += 1
                 else if ((j = jFin) and (i < iFin)) then
                     i += 1
-                else if ((i = iFin) and (1 < j)) then
+                else if ((i = iFin) and (jBeg < j)) then
                     j -= 1
-                else if ((j = jBeg) and (1 < i)) then
+                else if ((j = jBeg) and (iBeg + 1 < i)) then
                     i -= 1;
-                if ((i = iBeg + 1) and (j = Jbeg) and (j <> 4 - jFin)) then
+                if ((i - 1 = iBeg) and (j = Jbeg) and (j <> cols - jFin + 1)) then
                     begin
                     iBeg += 1;
                     jBeg += 1;
@@ -55,12 +72,16 @@ var
         writeln;
     end;
     
-    procedure sortBySpiral;
+    procedure sortElements;
     begin
-        
+        sort(elements);
     end;
 begin
-    fillRandom;
-    printMatrix;
-    printBySpiral;
+    getDimension; //  Получаем количество строк и столбцов
+    fillRandom; // Заполняем случайными числами от 0 до 9
+    printMatrix; // Выводим матрицу
+    goSpiral(1); // Выводим матрицу по спирали
+    sortElements; // Сортируем массив всех элементов
+    goSpiral(2); // Сортируем матрицу по спирали
+    printMatrix; // Выводим результат сортировки
 end.
