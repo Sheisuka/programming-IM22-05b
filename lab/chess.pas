@@ -1,5 +1,6 @@
 ﻿program chessField;
-var field: array[1..8, 1..8] of integer := ((0, 0, 0, 0, 0, 0, 0, 0), 
+var field: array[1..8, 1..8] of integer := (
+                                (0, 0, 0, 0, 0, 0, 0, 0), 
                                 (0, 0, 0, 0, 0, 0, 0, 0),
                                 (0, 0, 0, 0, 0, 0, 0, 0), 
                                 (0, 0, 0, 0, 0, 0, 0, 0),
