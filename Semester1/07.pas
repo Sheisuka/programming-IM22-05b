@@ -1,6 +1,6 @@
 ﻿program work07;
 
-{$APPTYPE CONSOLE}
+
 
 type
    TElement = record
