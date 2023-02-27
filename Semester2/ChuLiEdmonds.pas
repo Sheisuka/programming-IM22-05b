@@ -1,12 +1,12 @@
-program chuEdmons;
+﻿program chuEdmons;
     type 
         adjacency_matrix = array of array of integer;
         nodes_array = array of integer;
     var 
         matr: adjacency_matrix;
         root: integer;
-        visited: nodes_array;
-        dfs_res: boolean;
+        visited, dfs_res: nodes_array;
+        dfs_bool: boolean;
     
     function getPos(arr: nodes_array; node: integer): integer;
     var ans: integer := -1;
@@ -93,7 +93,7 @@ program chuEdmons;
         writeln;
     end;
     
-    function DFS(matr: adjacency_matrix; root: integer; var visited: nodes_array): boolean;
+    function DFS(matr: adjacency_matrix; root: integer; var visited: nodes_array): nodes_array;
     begin
         for var i := 0 to High(matr) do
         begin
@@ -107,31 +107,70 @@ program chuEdmons;
                 end;
             end;
         end;
-        if (length(visited) = length(matr)) then
-            Result := True;
+        Result := visited;
+    end;
+    
+    function create_zero_matrix(n: integer): adjacency_matrix;
+    var 
+        ans: adjacency_matrix;
+    begin
+        setLength(ans, n);
+        for var i := 0 to n - 1 do
+        begin
+            setLength(ans[i], n);
+            for var j := 0 to n - 1 do
+                ans[i, j] := 0;
+        end;
+        Result := ans;
+    end;
+    
+    function get_difference(arr1, arr2: nodes_array): nodes_array;
+    var
+        ans: nodes_array;
+    begin
+        for var i := 0 to High(arr1) do
+        begin
+            if (getPos(arr2, arr1[i]) = -1) then
+            begin
+                setLength(ans, length(ans) + 1);
+                ans[i] := arr1[i];
+            end;
+        end;
+        Result := ans;
     end;
     
     function __MST__(var matr: adjacency_matrix; root: integer; var ans: integer): integer;
     var
-        min_weight: integer;
+        min_weight, min_i, min_j: integer;
         new_matr: adjacency_matrix;
     begin
-        new_matr := Clone(matr);
+        new_matr := create_zero_matrix(length(matr));;
         for var i := 0 to High(matr) do
         begin
-            min_weight := 999;
-            for var j := 0 to High(matr) do
+            if (i <> root) then
             begin
-                if ((matr[j, i] <> 0) and (matr[j, i] < min_weight)) then 
-                    min_weight := matr[j, i];
-            end;
-            for var j := 0 to High(matr) do
-            begin
-                if (matr[j, i] <> 0) then 
-                    matr[j, i] -= min_weight;   
+                min_weight := 999;
+                for var j := 0 to High(matr) do
+                begin
+                    if ((matr[j, i] <> 0) and (matr[j, i] < min_weight)) then 
+                    begin
+                        min_weight := matr[j, i];
+                        min_i := i;
+                        min_j := j;
+                    end;
+                end;
+                ans += min_weight;
+                new_matr[min_j, min_i] := min_weight;
+                for var j := 0 to High(matr) do
+                begin
+                    if (matr[j, i] <> 0) then 
+                    begin
+                        matr[j, i] -= min_weight;  
+                    end;
+                end;
             end;
         end;
-        print_matrix(matr);
+        print_matrix(new_matr);
         Result := ans;
     end;
     
@@ -150,7 +189,8 @@ begin
     setLength(visited, 1);
     visited[0] := root;
     dfs_res := DFS(matr, root, visited);
-    if (dfs_res) then
+    dfs_bool := (length(dfs_res) = length(matr));
+    if (dfs_bool) then
     begin
         delete_incoming(matr, root);
         print_matrix(matr);
@@ -164,7 +204,7 @@ begin
         begin
             setLength(visited, 1);
             visited[0] := i;
-            if (DFS(matr, i, visited)) then
+            if (length(DFS(matr, i, visited)) = length(matr)) then
                 writeln(i);
         end;
     end;
