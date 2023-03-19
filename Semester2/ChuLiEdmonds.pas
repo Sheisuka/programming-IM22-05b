@@ -1,31 +1,35 @@
 ﻿program chuEdmons;
     type 
+        edge = (integer, integer);
+        edges_array = array of array of edge;
         adjacency_matrix = array of array of integer;
         nodes_array = array of integer;
     var 
         matr: adjacency_matrix;
+        edges: edges_array;
     
-    function read_adjacency_matrix: adjacency_matrix;
+    function read_adjacency_matrix: edges_array;
     var
         file_path, matrix_string: string;
         f: TextFile;
         temp_i, cur_row_i, delimeter_count: integer;
         res: adjacency_matrix;
+        true_res: edges_array;
+        edge: edge;
 
     begin
         writeln('Введите название файла/путь к нему');
         readln(file_path);
         assign(f, file_path);
         reset(f);
+        readln(f, matrix_string);
+        setLength(res, cur_row_i + 1);
+        for var i := 1 to Length(matrix_string) do
+            if matrix_string[i] = ',' then
+                delimeter_count += 1;
         while not Eof(f) do
-        begin
-            readln(f, matrix_string);
-            setLength(res, cur_row_i + 1);
-            for var i := 1 to Length(matrix_string) do
-                if matrix_string[i] = ',' then
-                    delimeter_count += 1;
+        begin  
             setLength(res[cur_row_i], delimeter_count);
-            
             temp_i := 0;
             for var i := 1 to Length(matrix_string) do
                 if (matrix_string[i] <> ',') then
@@ -37,46 +41,167 @@
             cur_row_i += 1;
         end;
         close(f);
-        Result := res;
-    end;
-    
-    procedure print_matrix(matrix: adjacency_matrix);
-    begin
-        writeln;
-        for var i := 0 to High(matrix) do
+
+        setLength(true_res, length(res));
+        for var i := 0 to High(res) do
         begin
-            for var j := 0 to High(matrix[i]) do 
-            begin
-                write(matrix[i, j]:2);
-            end;
-            writeln;
+            for var j := 0 to High(res) do 
+                if (res[i, j] <> 0) then
+                begin
+                    setLength(true_res[i], length(true_res) + 1);
+                    edge := (j, res[i, j]);
+                    true_res[i, length(true_res[i]) - 1] := edge;
+                end;
         end;
-        writeln;
+        Result := true_res;
     end;
 
-    function _create_zero_matrix(n: integer): adjacency_matrix;
+    function _condensate_edges(edges: edges_array; cicle: nodes_array): edges_array;
     var
-        zero_matrix: adjacency_matrix;
+        condensated_edges: edges_array;
+        new_node, cel: integer;
+        new_edge: edge;
     begin
-        setLength(zero_matrix, n);
-        for var i := 0 to n - 1 do
-            setLength(zero_matrix[i], n);
-        Result := zero_matrix;
+        new_node := min(cicle);
+        setLength(condensated_edges, length(edges) - length(cicle) + 1);
+        for var i := 0 to High(edges) do
+            for var j := 0 to High(edges) do 
+                if ((i in cicle) and not (edges[i, j].item1 in cicle)) then
+                begin
+                    cel := length(condensated_edges[new_node]);
+                    setLength(condensated_edges[new_node], cel + 1);
+                    condensated_edges[new_node, cel - 1] := edges[i, j]
+                end
+                else if (not (i in cicle) and (edges[i, j].item1 in cicle)) then
+                    begin
+                        cel := length(condensated_edges[new_node]);
+                        setLength(condensated_edges[new_node], cel + 1);
+                        new_edge := (new_node, edges[i, j].item2);
+                        condensated_edges[i, cel - 1] := new_edge;
+                    end
+                else if (not (i in cicle) and not (edges[i, j].item1 in cicle)) then
+                begin
+                    cel := length(condensated_edges[new_node]);
+                    setLength(condensated_edges[new_node], cel + 1);
+                    condensated_edges[i, cel - 1] := edges[i, j];
+               end;
+        Result := condensated_edges;
+    end; 
+
+    function _get_pos(element: integer; arr: nodes_array): integer;
+    var 
+        ans: integer := -1;
+        p: integer;
+    begin
+        for var i := 0 to High(arr) do 
+            if (arr[i] = element) then
+                Result := i;
     end;
     
-    function DFS(matr: adjacency_matrix; root: integer; var visited: nodes_array): nodes_array;
+    function slice(arr: nodes_array; from_, to_: integer): nodes_array;
+    var
+        ans: nodes_array;
     begin
-        for var i := 0 to High(matr) do
-            if (matr[root, i] <> 0) and not (i in visited{getPos(visited, i) = -1}) then
+        setLength(ans, to_ - from_ + 1);
+        for var i := from_ to to_ do
+            ans[i] := arr[i];
+        Result := ans;
+    end;
+
+    
+    function _find_cicle(edges: edges_array; root: integer; var visited: nodes_array): nodes_array;
+    var 
+        cicle: nodes_array;
+        p: integer;
+    begin
+        for var i := 0 to High(edges) do
+            if not (edges[root, i].item1 in visited) then
                 begin
                     setLength(visited, length(visited) + 1);
                     visited[length(visited) - 1] := i;
-                    DFS(matr, i, visited);
+                    _find_cicle(edges, i, visited);
+                end
+            else 
+                begin
+                    p := _get_pos(edges[root, i].item1, visited);
+                    if (p <> length(visited) - 1) and (length(visited) >= 2) then
+                    begin
+                        setLength(cicle, length(visited) - p);
+                        cicle := slice(visited, p, length(visited) - 1); // От P до конца
+                        break
+                    end;
+                end;
+        Result := cicle;
+    end;
+ 
+    
+    function DFS(edges: edges_array; root: integer; var visited: nodes_array): nodes_array;
+    begin
+        for var i := 0 to High(edges) do
+            if (_get_pos(edges[root, i].item1, visited) = -1) then
+                begin
+                    setLength(visited, length(visited) + 1);
+                    visited[length(visited) - 1] := i;
+                    DFS(edges, i, visited);
                 end;
         Result := visited;
     end;
 
-    function MST(matr: adjacency_matrix): adjacency_matrix;
+    function _MST(var edges: edges_array; root: integer): integer;
+    var
+        min_incoming, visited, dfs_res, cicle: nodes_array;
+        min_edges, new_edges, condensated_edges: edges_array;
+        new_edge: edge;
+        res: integer;
+    begin
+        //_delete_incoming_edges(matr);
+
+        setLength(min_incoming, length(edges));
+        for var i := 0 to High(edges) do
+            for var j := 0 to High(edges[i]) do
+                if (i = edges[i, j].item1) then
+                    min_incoming[i] := min(min_incoming[i], edges[i, j].item2);
+
+        setLength(min_edges, length(edges));
+        setLength(new_edges, length(edges));
+        for var i := 0 to High(edges) do
+            for var j := 0 to High(edges) do
+            begin
+                if (edges[i, j].item2 <> min_incoming[j]) then
+                begin
+                    new_edge := (edges[i, j].item1, edges[i, j].item2 - min_incoming[j]);
+                    setLength(new_edges[i], length(new_edges[i]) + 1);
+                    new_edges[i, length(new_edges[i]) - 1] := new_edge;
+                end
+                else
+                begin
+                    res += edges[i, j].item2;
+                    setLength(new_edges[i], length(new_edges[i]) + 1);
+                    new_edges[i, length(new_edges[i]) - 1] := (edges[i, j].item1, 0);
+                end;
+            end;
+
+        setLength(visited, 0);
+        dfs_res := DFS(min_edges, root, visited);
+        if (length(dfs_res) = length(edges)) then
+            Result := res
+        else
+        begin
+            // Образуется цикл после консендируется и запуск по новой
+            for var i := 0 to High(edges) do
+            begin
+                setLength(visited, 0);
+                cicle := _find_cicle(edges, root, visited);
+                if (length(cicle) >= 3) then
+                    break;
+            end;
+
+            condensated_edges := _condensate_edges(new_edges, cicle);
+            res += _MST(condensated_edges, root);
+        end;
+    end;
+
+    function MST(edges: edges_array): integer;
     var
         dfs_bool: boolean;
         visited, dfs_res: nodes_array;
@@ -86,13 +211,11 @@
         readln(root);
         setLength(visited, 1);
         visited[0] := root;
-        dfs_res := DFS(matr, root, visited);
-        dfs_bool := (length(dfs_res) = length(matr));
+        dfs_res := DFS(edges, root, visited);
+        dfs_bool := (length(dfs_res) = length(edges));
         if (dfs_bool) then
         begin
-            delete_incoming(matr, root);
-            print_matrix(matr);
-            MST(matr, root);
+            _MST(edges, root);
         end
         else
         begin
@@ -102,52 +225,16 @@
             begin
                 setLength(visited, 1);
                 visited[0] := i;
-                if (length(DFS(matr, i, visited)) = length(matr)) then
+                if (length(DFS(edges, i, visited)) = length(edges)) then
                     writeln(i);
             end;
-            MST;
+            MST(edges);
         end;
-        Result := _MST(root, matr);
+        Result := _MST(edges, root);
     end;
-
-    procedure _delete_incoming_edges(var matr: adjacency_matrix; node: integer);
-    begin
-        for var i := 0 to High(matr) do
-            matr[i, node] := 0;
-    end;
-
-    function _MST(var matr: adjacency_matrix; root: integer): adjacency_matrix;
-    var
-        min_matr: adjacency_matrix;
-        min_incoming, visited: nodes_array;
-        min_to, min_from: integer;
-    begin
-        _delete_incoming_edges(matr);
-
-        setLength(min_incoming, length(matrix));
-        for var i := 0 to High(matr) do
-        begin
-            for var j := 0 to High(matr) do
-                if (matr[j, i] <> 0) then
-                    if (min_incoming[i] < matr[j, i]) then
-                    begin
-                        min_incoming[i] := matr[j, i];
-                        min_to := i;
-                        min_from := j;
-                    end;
-            min_matr[j, i] := min_matr;
-        end;
-
-        if (length(DFS(min_matr, root, visited)) = length(matr)) then
-            Result := min_matr
-        else
-        begin
-            // Образуется цикл после консендируется и запуск по новой
-        end;
-    end;
-
+    
 begin
-    matr := read_adjacency_matrix;
-    print_matrix(matr);
-    MST(matr);
+    edges := read_adjacency_matrix;
+    writeln(edges);
+    MST(edges);
 end.
