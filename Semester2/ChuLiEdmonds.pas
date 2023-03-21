@@ -1,55 +1,23 @@
 ﻿program ChuLiEdmons;
     type 
-        edge_tuple = (integer, integer, integer);
-        array_edges = array of edge_tuple;
-        array_2d = array of array of integer;
-        array_1d = array of integer;
-    var
-        root, n: integer;
-        edges: array_edges;
-        adjacency_matrix: array_2d;
-        visited, dfs_res: array_1d;
+        edge = (integer, integer);
+        edges_array = array of array of edge;
+        adjacency_matrix = array of array of integer;
+        nodes_array = array of integer;
+        cicles_array = array of nodes_array;
+    var 
+        matr: adjacency_matrix;
+        edges: edges_array;
     
-    function getPos(arr: array_1d; node: integer): integer;
-    var ans: integer := -1;
-    begin
-        for var i := 0 to High(arr) do
-        begin
-            if (node = arr[i]) then
-                ans := i;
-        end;
-        Result := ans;
-    end;
-    
-    function count_components(edges: array_edges): array_1d;
+    function read_adjacency_matrix: edges_array;
     var
-        uni: array_1d;
-    begin
-        for var i := 0 to High(edges) do
-            begin
-                if (getPos(uni, edges[i][0]) = -1) then
-                begin
-                    setLength(uni, length(uni) + 1);
-                    uni[length(uni) - 1] := edges[i][0];
-                end
-                else if (getPos(uni, edges[i][1]) = -1) then
-                begin
-                    setLength(uni, length(uni) + 1);
-                    uni[length(uni) - 1] := edges[i][1];
-                end;
-            end;
-        Result := uni;
-    end;
-    
-    function read_adjacency_matrix: array_2d;
-    var
-        file_path: string;
+        file_path, matrix_string: string;
         f: TextFile;
-        
-        matrix_string: string;
         temp_i, cur_row_i, delimeter_count: integer;
-        
-        res: array_2d;
+        matr: adjacency_matrix;
+        res: edges_array;
+        edge: edge;
+
     begin
         write('Введите название файла/путь к нему - ');
         readln(file_path);
@@ -59,223 +27,281 @@
         while not Eof(f) do
         begin
             readln(f, matrix_string);
-            setLength(res, cur_row_i + 1);
-            
-            if (delimeter_count = 0) then
-            begin
-                for var i := 1 to Length(matrix_string) do
-                begin
-                    if matrix_string[i] = ',' then
-                      delimeter_count += 1;
-                end;
-            end;
-            setLength(res[cur_row_i], delimeter_count);
+            setLength(matr, cur_row_i + 1);
+            for var i := 1 to Length(matrix_string) do
+                if matrix_string[i] = ',' then
+                    delimeter_count += 1;
+            setLength(matr[cur_row_i], delimeter_count);
             
             temp_i := 0;
             for var i := 1 to Length(matrix_string) do
-            begin
-                if matrix_string[i] <> ',' then
+                if (matrix_string[i] <> ',') then
                 begin
-                    res[cur_row_i, temp_i] := StrToInt(matrix_string[i]);
+                    matr[cur_row_i, temp_i] := StrToInt(matrix_string[i]);
                     temp_i += 1;
                 end;
-            end;
             
             cur_row_i += 1;
         end;
         close(f);
-        Result := res;
-    end;
-    
-    function get_adjacency_array(matr: array_2d): array_edges;
-    var
-        adj_array: array_edges;
-        edge: edge_tuple;
         
-    begin
+        setLength(res, length(matr));
         for var i := 0 to High(matr) do
-        begin
-            for var j := 0 to High(matr) do
-            begin
-                if ((matr[i, j] <> 0) and (i <> j)) then
+            for var j := 0 to High(matr[i]) do
+                if (matr[i, j] <> 0) then
                 begin
-                    edge := (i, j, matr[i, j]);
-                    setLength(adj_array, length(adj_array) + 1);
-                    adj_array[length(adj_array) - 1] := edge;
+                    edge := (j, matr[i, j]);
+                    setLength(res[i], length(res[i]) + 1);
+                    res[i, length(res[i]) - 1] := edge;
                 end;
-            end;
-        end;
-        Result := adj_array;
+        
+        
+        Result := res;
+
     end;
-    
-    procedure print_matrix(matrix: array_2d);
-    begin
-        writeln;
-        for var i := 0 to High(matrix) do
-        begin
-            for var j := 0 to High(matrix[i]) do 
-            begin
-                write(matrix[i, j]:2);
-            end;
-            writeln;
-        end;
-        writeln;
-    end;
-    
-    function DFS(edges: array_edges; root: integer; var visited: array_1d): array_1d;
+
+    function _condensate_edges(edges: edges_array; cicle: nodes_array): edges_array;
     var
-        root_path: array_edges;
+        condensated_edges: edges_array;
+        new_node, cel: integer;
+        new_edge: edge;
     begin
-        setLength(visited, length(visited) + 1);
-        visited[length(visited) - 1] := root;
-        for var i := 0 to High(edges) do 
-            if (edges[i][0] = root) then
+        new_node := min(cicle);
+        setLength(condensated_edges, length(edges));
+        for var i := 0 to High(edges) do
+            setLength(condensated_edges[i], 0);
+        for var i := 0 to High(edges) do
+            for var j := 0 to High(edges[i]) do 
+                if ((i in cicle) and not (edges[i, j].item1 in cicle)) then
+                begin
+                    cel := length(condensated_edges[new_node]);
+                    setLength(condensated_edges[new_node], cel + 1);
+                    condensated_edges[new_node, cel] := edges[i, j]
+                end
+                else if (not (i in cicle) and (edges[i, j].item1 in cicle)) then
+                    begin
+                        cel := length(condensated_edges[i]);
+                        setLength(condensated_edges[i], cel + 1);
+                        new_edge := (new_node, edges[i, j].item2);
+                        condensated_edges[i, cel] := new_edge;
+                    end
+                else if (not (i in cicle) and not (edges[i, j].item1 in cicle)) then
+                begin
+                    cel := length(condensated_edges[i]);
+                    setLength(condensated_edges[i], cel + 1);
+                    condensated_edges[i, cel] := edges[i, j];
+               end;
+        Result := condensated_edges;
+    end; 
+
+    function _get_pos(element: integer; arr: nodes_array): integer;
+    var
+        ans: integer := -1;
+    begin
+        for var i := 0 to High(arr) do 
+            if (arr[i] = element) then
             begin
-                setLength(root_path, length(root_path) + 1);
-                root_path[length(root_path) - 1] := edges[i];
+               ans := i;
+               break;
             end;
-        for var i := 0 to High(root_path) do
-        begin
-            if (getPos(visited, root_path[i][1]) = -1) then
-            begin
-                DFS(edges, root_path[i][1], visited);
-            end;
-        end;
+        Result := ans;
+    end;
+    
+    function slice(arr: nodes_array; from_, to_: integer): nodes_array;
+    var
+        ans: nodes_array;
+    begin
+        setLength(ans, to_ - from_ + 1);
+        for var i := from_ to to_ do
+            ans[i] := arr[i];
+        Result := ans;
+    end;
+
+    
+    function _find_cicle(edges: edges_array; root: integer; var visited: nodes_array): nodes_array;
+    var 
+        cicle: nodes_array;
+        p: integer;
+    begin
+        for var i := 0 to High(edges[root]) do
+            if not (edges[root, i].item1 in visited) then
+                begin
+                    setLength(visited, length(visited) + 1);
+                    visited[length(visited) - 1] := edges[root, i].item1;
+                    cicle := _find_cicle(edges, edges[root, i].item1, visited);
+                end
+            else 
+                begin
+                    p := _get_pos(edges[root, i].item1, visited);
+                    if (p <> length(visited) - 1) and (length(visited) >= 2) then
+                    begin
+                        setLength(cicle, length(visited) - p);
+                        cicle := slice(visited, p, length(visited) - 1); // От P до конца
+                        Result := cicle;
+                        break
+                    end;
+                end;
+        Result := cicle;
+    end;
+ 
+    
+    function DFS(edges: edges_array; root: integer; var visited: nodes_array): nodes_array;
+    begin
+        for var i := 0 to High(edges[root]) do
+            if (_get_pos(edges[root, i].item1, visited) = -1) then
+                begin
+                    setLength(visited, length(visited) + 1);
+                    visited[length(visited) - 1] := edges[root, i].item1;
+                    DFS(edges, edges[root, i].item1, visited);
+                end;
         Result := visited;
     end;
     
-    function array_difference(arr1, arr2: array_1d): array_1d;
+    function count_nodes(edges: edges_array): integer;
     var
-        diff: array_1d;
+        ans: integer;
+        visited: nodes_array;
     begin
-        if (length(arr1) > length(arr2)) then
-        begin
-            for var i := 0 to High(arr1) do
+        setLength(visited, 0);
+        for var i := 0 to High(edges) do 
+            for var j := 0 to High(edges[i]) do
             begin
-                if (getPos(arr2, arr1[i]) = -1) then
+                if (not (edges[i, j].item1 in visited) and not (i in visited)) then
                 begin
-                    setLength(diff, length(diff) + 1);
-                    diff[length(diff) - 1] := arr1[i];
+                    setLength(visited, length(visited) + 2);
+                    visited[length(visited) - 2] := i;
+                    visited[length(visited) - 1] := edges[i, j].item1;
+                end
+                else if (not (i in visited)) then
+                begin
+                    setLength(visited, length(visited) + 1);
+                    visited[length(visited) - 1] := i;
+                end 
+                else if (not (edges[i, j].item1 in visited)) then
+                begin
+                    setLength(visited, length(visited) + 1);
+                    visited[length(visited) - 1] := edges[i, j].item1;
                 end;
             end;
-        end
+        Result := length(visited);
+    end;
+    
+    function not_contains(arr: cicles_array; node: integer): boolean;
+    var
+        ans := True;
+    begin
+        for var i := 0 to High(arr) do
+            if (node in arr[i]) then
+            begin
+                ans := False;
+                break;
+            end;
+        Result := ans;
+    end;
+
+    function _MST(var edges: edges_array; root: integer): integer;
+    var
+        min_incoming, visited, dfs_res, cicle: nodes_array;
+        min_edges, new_edges, condensated_edges: edges_array;
+        cicles: cicles_array;
+        new_edge: edge;
+        res: integer;
+    begin
+        //_delete_incoming_edges(matr);
+
+        setLength(min_incoming, length(edges));
+        for var i := 0 to High(edges) do
+            for var j := 0 to High(edges[i]) do
+                if (min_incoming[edges[i, j].item1] = 0) then
+                    min_incoming[edges[i, j].item1] := edges[i, j].item2
+                else
+                    min_incoming[edges[i, j].item1] := min(min_incoming[edges[i, j].item1], edges[i, j].item2);
+
+        setLength(min_edges, length(edges));
+        setLength(new_edges, length(edges));
+        for var i := 0 to High(min_edges) do
+            setLength(min_edges[i], 0);
+        for var i := 0 to High(edges) do
+            for var j := 0 to High(edges[i]) do
+            begin
+                begin
+                    new_edge := (edges[i, j].item1, edges[i, j].item2 - min_incoming[edges[i, j].item1]);
+                    setLength(new_edges[i], length(new_edges[i]) + 1);
+                    new_edges[i, length(new_edges[i]) - 1] := new_edge;
+                end;
+                if (edges[i, j].item2 = min_incoming[edges[i, j].item1]) then
+                begin
+                    res += edges[i, j].item2;
+                    setLength(min_edges[i], length(min_edges[i]) + 1);
+                    min_edges[i, length(min_edges[i]) - 1] := (edges[i, j].item1, 0);
+                    min_incoming[edges[i, j].item1] := 0;
+                end;
+            end;
+
+        setLength(visited, 1);
+        visited[0] := root;
+        dfs_res := DFS(min_edges, root, visited);
+        if (length(dfs_res) = count_nodes(edges)) then
+            Result := res
         else
         begin
-            for var i := 0 to High(arr2) do
+            // Образуется цикл после консендируется и запуск по новой
+            setLength(cicles, 0);
+            for var i := 0 to High(edges) do
             begin
-                if (getPos(arr1, arr2[i]) = -1) then
+                if (not_contains(cicles, i)) then
                 begin
-                    setLength(diff, length(diff) + 1);
-                    diff[length(diff) - 1] := arr2[i];
+                    setLength(visited, 1);
+                    visited[0] := i;
+                    cicle := _find_cicle(min_edges, i, visited);
+                    if (length(cicle) >= 2) then
+                    begin
+                        setLength(cicles, length(cicles) + 1);
+                        cicles[length(cicles) - 1] := cicle;
+                    end;
                 end;
             end;
-        end;
-        if (length(diff) = 0) then setLength(diff, 1);
-        Result := diff;
-    end;
-    
-    function Condensate(zeroEdges, edges: array_edges): array_edges;
-    var
-        all_nodes, first_comp, second_comp, visited1, visited2: array_1d;
-        first_edge, second_edge, first_to, second_to, newfrom, newto: integer;
-        newEdges: array_edges;
-    begin
-        all_nodes := count_components(zeroedges);
-        first_edge := zeroEdges[1][0];
-        first_comp := DFS(zeroEdges, first_edge, visited1);
-        first_to := first_comp.Min;
-        for var i := 0 to High(edges) do
-        begin
-            newfrom := edges[i][0];
-            newto := edges[i][1];
-            if not ((getPos(first_comp, edges[i][0]) >= 0) and (getPos(first_comp, edges[i][1]) >= 0)) then
-            begin
-                if (getPos(first_comp, edges[i][0]) >= 0) then newfrom := first_to;
-                if (getPos(first_comp, edges[i][1]) >= 0) then newto := first_to;
-                setLength(newEdges, length(newEdges) + 1);
-                newEdges[length(newEdges) - 1] := (newfrom, newto, edges[i][2]);
-            end;
-        end;
-        Result := newEdges;
-    end;
-    
-    function MST(edges: array_edges; comp_count, root, n: integer): integer;
-    var
-        res: integer := 0;
-        visited_dfs, minEdge: array_1d;
-        zeroEdges, newEdges: array_edges;
-        edge: edge_tuple;
-    begin
-        setLength(minEdge, comp_count);
-        for var i := 0 to High(minEdge) do
-            minEdge[i] := 99;
-        for var i := 0 to High(edges) do
-            minEdge[edges[i][1]] := min(minEdge[edges[i][1]], edges[i][2]);
-        for var i := 0 to High(edges) do
-        begin
-            if (edges[i][1] <> root) then
-                res += minEdge[edges[i][1]];
-        end;
-        for var i := 0 to High(edges) do begin
-            if edges[i][2] = minEdge[edges[i][1]] then
-            begin
-                setLength(zeroEdges, length(zeroEdges) + 1);
-                edge := (edges[i][0], edges[i][1], edges[i][2] - minEdge[edges[i][1]]);
-                zeroEdges[length(zeroEdges) - 1] := edge;
-            end;
-        end;
-        {for var i := 0 to High(edges) do
-          begin
-            edge := (edges[i][0], edges[i][1], edges[i][2] - minEdge[edges[i][1]]);
-            edges[i] := edge;
-            if ((edges[i][2] = minEdge[edges[i][1]]) and (edges[i][1] <> root)) then
-            begin
-                setLength(zeroEdges, length(zeroEdges) + 1);
-                res += minEdge[edges[i][1]];
-                edge := (edges[i][0], edges[i][1], edges[i][2] - minEdge[edges[i][1]]);
-                edges[i] := edge;
-                zeroEdges[length(zeroEdges) - 1] := edge}
-        writeln(zeroEdges);
-        setLength(visited, 0);
-        writeln(res);
-        if (length(DFS(zeroEdges, root, visited)) = comp_count) then
-            Result := res
-        else 
-        begin
-            newEdges := Condensate(zeroEdges, edges);
-            res += MST(newEdges, length(count_components(newEdges)), root, n);
+            
+            for var i := 0 to High(cicles) do     
+                new_edges := _condensate_edges(new_edges, cicles[i]);
+            res += _MST(new_edges, root);
         end;
         Result := res;
     end;
-    
-    
-begin
-    adjacency_matrix := read_adjacency_matrix;
-    n := length(adjacency_matrix);
-    edges := get_adjacency_array(adjacency_matrix);
-    write('Ребра графа - ');
-    writeln(edges);
-    writeln;
-    write('Введите вершину-корень - ');
-    readln(root);
-    writeln;
-    dfs_res := DFS(edges, root, visited);
-    writeln(dfs_res);
-    if (length(dfs_res) = n) then
+
+    function MST(edges: edges_array): integer;
+    var
+        dfs_bool: boolean;
+        visited, dfs_res: nodes_array;
+        root: integer;
     begin
-        writeln(MST(edges, n, root, n));
-    end;
-    {else
-    begin
-        writeln('Невозможно составить остовное дерево, так как не все вершины достижимы из такого корня');
-        writeln('Попробуйте вершины под следующими номерами:');
-        for var i := 0 to High(matr) do
+        writeln('Введите вершину-корень');
+        readln(root);
+        setLength(visited, 1);
+        visited[0] := root;
+        dfs_res := DFS(edges, root, visited);
+        dfs_bool := (length(dfs_res) = length(edges));
+        if (dfs_bool) then
         begin
-            setLength(visited, 1);
-            visited[0] := i;
-            if (length(DFS(matr, i, visited)) = length(matr)) then
-                writeln(i);
+            Result := _MST(edges, root);
+        end
+        else
+        begin
+            writeln('Невозможно составить остовное дерево, так как не все вершины достижимы из такого корня');
+            writeln('Попробуйте вершины под следующими номерами:');
+            for var i := 0 to High(matr) do
+            begin
+                setLength(visited, 1);
+                visited[0] := i;
+                if (length(DFS(edges, i, visited)) = length(edges)) then
+                    writeln(i);
+            end;
+            MST(edges);
         end;
     end;
-    }
+    
+begin
+    edges := read_adjacency_matrix;
+    writeln(edges);
+    writeln(MST(edges));
 end.
