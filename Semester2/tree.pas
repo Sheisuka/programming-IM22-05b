@@ -1,4 +1,4 @@
-program trees;
+﻿program trees;
 type
     ptr =  ^Node;
     Node = record
@@ -10,18 +10,18 @@ type
 var 
     root: ptr;
 
-    procedure add_element(root, x);
+    procedure add_element(root, x: ptr);
     begin
-        if x > root^.val then
+        if (x^.val > root^.val) then
             if root^.r = nil then
                 root^.r := x
             else
                 add_element(root^.r, x)
-        else if x < root^.val then
+        else if (x^.val < root^.val) then
             if root^.l = nil then
-                root^.l = x
+                root^.l := x
             else
-                add_element(root^.r, x);
+                add_element(root^.l, x);
     end;
 
     function init_node: ptr;
@@ -40,7 +40,7 @@ var
         cur_node, dummy: ptr;
     begin
         new(dummy);
-        dummy^.val = -999;
+        dummy^.val := -999;
         writeln('Cколько узлов будет в дереве?');
         readln(count);
         for var i := 1 to count do
@@ -63,16 +63,17 @@ var
     end;
 
 
-    procedure view_horizontally(tree: ptr; indent: integer);
+    procedure view_horizontally(tree: ptr; indent, a_indent: integer);
     begin
         if (tree^.l <> nil) then
-            view_horizontally(tree^.l, indent + 4);
-        writeln(tree^.val:indent);
+            view_horizontally(tree^.l, indent + 4, a_indent);
+        writeln(tree^.val:(a_indent - indent));
         if (tree^.r <> nil) then
-            view_horizontally(tree^.r, indent + 4);
+            view_horizontally(tree^.r, indent + 4, a_indent);
     end;
     
 begin
     root := create_tree;
-    view_horizontally(root);
+    writeln;
+    view_horizontally(root, 0, get_height(root, 0) * 4);
 end.
