@@ -141,23 +141,14 @@ var
     procedure reverse_stack(head, prev: ptr; var new_head: ptr); // Задание 5
     begin
         if (head <> nil) then
-            begin
-                if (head^.prev <> nil) then
-                begin
-                    new_head^.prev := prev;
-                    new_head^.val := head^.val;
-                    prev := head;
-                    head := head^.prev;
-                    new(new_head);
-                    reverse_stack(head, prev, new_head);
-                end
-                else
-                begin
-                    new_head^.prev := prev;
-                    new_head^.val := head^.val;
-                end;
-                
-            end;
+        begin
+            new(new_head);
+            new_head^.prev := prev;
+            new_head^.val := head^.val;
+            prev := new_head;
+            head := head^.prev;
+            reverse_stack(head, prev, new_head);
+        end;
     end;
 
     //function add_stack
@@ -213,9 +204,7 @@ begin
 
     writeln('Задание 5');
     head := create_stack; 
-    new(new_head);
     reverse_stack(head, nil, new_head);
-    new_head := new_head^.prev;
     viewStack(head);
     viewStack(new_head); 
 end.
