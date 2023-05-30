@@ -1,50 +1,53 @@
-program bigNumbers26;
-type
-    ptr =  ^QueueElement;
-    QueueElement = record
-        l: ptr;
-        r: ptr;
-        val: integer;
-    end;
+program bigNumber26;
+    type
+        bigNP = bigN^;
+        bigN = record
+            val: integer;
+            r: bigNP;
+            l: bigNP;
+        end; 
+    var
+        ln, rn, lnk, rnk: bigNP;
+        k: integer;
 
-var
-    n, k: integer;
-
-    procedure get_number(n);
+    procedure get_big_n(var lh, rh: bigNP);
+    var
+        num: integer;
+        lhead, rhead, dummy, prev: bigNP;
     begin
-        writeln('Число будет равно n*(n+1)/2. Введите n');
-        readln(n);
-        n := n*(n + 1)/2
-    end;
-
-    procedure get_numeral_system(k);
-    begin
-        writeln('Система счисления (2*k+1)^2. Введите k');
-        readln(k);
-        k := power((2 * k + 1), 2);
-    end;
-
-    procedure print_big_number(head: ptr);
-    begin
-        while (head <> nil) do
+        new(dummy);
+        prev := dummy;
+        writeln('Вводите число поциферно справа налево, -1 если захотите закончить');
+        while (num <> -1) do
         begin
-            write(head^.val);
-            head := head^.l;
+            writeln('---> ');
+            read(num);
+            if ((num >= 0) and (num <= 9)) then
+            begin
+                new(lhead);
+                prev^.l := lhead;
+                lhead^.r := prev;
+                lhead^.val := num;
+                prev := lhead;
+            end;
         end;
-        writeln;
+        lh := lhead;
+        rh := dummy^.l;     
     end;
 
-    function get_in_k_number_system(head: ptr): ptr;
+    procedure view_big_n(lh: bigNP);
     begin
-    end;
-
-    function check(var n, k: integer): boolean;
-    begin
-        get_number(n);
-        get_numeral_system(k)
+        while (lh <> nil) do
+        begin
+            write(lh^.val);
+            lh := lh^.r;
+        end;
     end;
 
 begin
-    check(n, k);
-
+    writeln('Введите число n');
+    get_big_n(ln, rn);
+    view_big_n(ln);
+    writeln('Введите число k');
+    readln(k);
 end.
