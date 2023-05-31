@@ -7,8 +7,30 @@
             l: bigNP;
         end; 
     var
-        ln, rn, ln_k, rn_k : bigNP;
+        ln, rn, ln_k, rn_k, int_k_l, int_k_r: bigNP;
+        ISH_L, ISH_R: bigNP;
+        ln_copy, rn_copy, n_n1l, n_n1r, ndiv_l, ndiv_r: bigNP;
+        THE_NUML, THE_NUMR, THE_NUML_K, THE_NUMR_K: bigNP;
         k: integer;
+        
+    procedure copy_big_n(r: bigNP; var new_l, new_r: bigNP);
+    var
+        prev, dummy: bigNP;
+    begin
+        new(dummy);
+        prev := dummy;
+        while (r <> nil) do
+        begin
+            new(new_l);
+            new_l^.val := r^.val;
+            new_l^.r := prev;
+            prev^.l := new_l;
+            prev := new_l;
+            r := r^.l;
+        end;
+        new_r := dummy^.l;
+        new_r^.r := nil;
+    end;
     
     function my_power(x, y: integer): integer;
     begin
@@ -197,9 +219,7 @@
         while (k <> nil) do
         begin
             mult_bn_int(n, res_m_r, res_m_l, k^.val * cur_factor);
-            view_big_n(res_m_l);
             add_bn_bn(res_m_r, cur_a_r, cur_a_l, cur_a_r);
-            view_big_n(cur_a_l);
             cur_factor *= 10;
             k := k^.l;
         end;
@@ -226,7 +246,6 @@
         remainder: integer; 
         new_nl, new_nr, nikr: bigNP;
     begin
-        view_big_n(nr);
         new(new_nr);
         while not ((nr^.val < k) and (nr^.l = nil)) do
         begin
@@ -249,27 +268,77 @@
         resl := nikr;
     end;
     
-    procedure concat_bn_int(var bn_r: bigNP; int: integer);
+    procedure int_to_k(int, k: integer; var resl_, resr_: bigNP);
     var
-        len := -1;
-        int_: integer;
-        cur: bigNP;
+        resl, resr: bigNP;
     begin
-        int_ := int;
-        while (int_ > 0) do
+        new(resr);
+        resl := resr;
+        while (int > 0) do
         begin
-            len += 1;
-            int_ := int_ - my_power(10, len);
+            resl^.val := int mod k;
+            int := int div k;
+            new(resl^.l);
+            resl^.l^.r := resl;
+            resl := resl^.l;
         end;
-        while (int <> 0) do
+        if (resl^.val = 0) then
         begin
-            new(cur);
-            cur^.val := int div (my_power(10, len));
-            int -= my_power(10, len);
-            cur^.l := bn_r;
-            bn_r^.r := cur;
-            bn_r := bn_r^.r;
+            resl^.r^.l := nil;
+            resl := resl^.r;
         end;
+        resl_ := resl;
+        resr_ := resr;
+    end;
+    
+    procedure concat_bn_bn(var bn_r: bigNP; int: bigNP);
+    var 
+        new_r := bn_r;
+    begin
+        while (int <> nil) do
+        begin
+            new(new_r);
+            new_r^.val := int^.val;
+            new_r^.l := bn_r;
+            bn_r^.r := new_r;
+            bn_r := new_r;
+            int := int^.r;
+        end;
+    end;
+    
+    procedure div_by_2(n_l, n_r: bigNP; var res_l, res_r: bigNP);
+    var
+        resl, resr: bigNP;
+    begin
+        new(resr);
+        resl := resr;
+        while not ((n_r^.val < 2) and (n_r^.l = nil)) do
+        begin
+            subs_bn_int(n_r, 2);
+            strip_bn(n_l);
+            add_bn_int(resr, 1);
+        end;
+        while (resl^.l <> nil) do
+            resl := resl^.l;
+        res_l := resl;
+        res_r := resr;
+    end;
+    
+    procedure get_the_number(n_l, n_r: bigNP; k: integer; var resl, resr: bigNP);
+    var
+        mult_new_k_n1l, mult_new_k_n1r, mult_new_k_n2l, mult_new_k_n2r: bigNP;
+        mult_bn_bn_l, mult_bn_bn_r, THATL, THATR: bigNP;
+        new_k: integer;
+    begin
+        new_k := 2 * k + 1;
+        mult_bn_int(n_r, mult_new_k_n1r, mult_new_k_n1l, new_k);
+        mult_bn_int(n_r, mult_new_k_n2r, mult_new_k_n2l, new_k);
+        add_bn_int(mult_new_k_n1r, k);
+        add_bn_int(mult_new_k_n2r, k + 1);
+        mult_bn_bn(mult_new_k_n1r, mult_new_k_n2r, mult_bn_bn_l, mult_bn_bn_r);
+        div_by_2(mult_bn_bn_l, mult_bn_bn_r, THATL, THATR);
+        resl := THATL;
+        resr := THATR;
     end;
 
 begin
@@ -277,12 +346,41 @@ begin
     get_big_n(ln, rn);
     writeln('Ваше число: ');
     view_big_n(ln);
+    copy_big_n(rn, ish_l, ish_r);
+    copy_big_n(rn, ln_copy, rn_copy);
+    
     writeln('Введите число k');
     readln(k);
+    
     new(ln_k);
-    new(rn_k);
-    bn_to_k(ln, rn, sqr((2 * k + 1)), ln_k, rn_k);
+    new(rn_k); 
+    writeln('n');
+    view_big_n(rn);
+    add_bn_int(rn, 1);
+    writeln('n + 1');
+    view_big_n(rn);
+    mult_bn_bn(rn, rn_copy, n_n1l, n_n1r);
+    writeln('n * (n + 1)');
+    view_big_n(n_n1r);
+    div_by_2(n_n1l, n_n1r, ndiv_l, ndiv_r);
+    writeln('n * (n + 1) / 2');
+    view_big_n(ndiv_r);
+    bn_to_k(ndiv_l, ndiv_r, sqr((2 * k + 1)), ln_k, rn_k);
+    writeln('n * (n + 1) / 2 в СЧ с осн. ', sqr((2 * k + 1)));
+    view_big_n(rn_k); 
+    int_to_k(((k + 1) * k) div 2, sqr(2 * k + 1), int_k_l, int_k_r);
+    
+    writeln('То что вышло в ходе склеивания');
+    concat_bn_bn(rn_k, int_k_l);
     view_big_n(rn_k);
-    concat_bn_int(rn_k, (k * (k + 1)) div 2);
-    view_big_n(rn_k);
+    
+    writeln('То самое число в СЧ 10');
+    get_the_number(ish_l, ish_r, k, THE_NUML, THE_NUMR);
+    view_big_n(THE_NUMR);
+    
+    new(THE_NUML_K);
+    new(THE_NUMR_K);
+    writeln('То самое число в СЧ ', sqr(2 * k + 1));
+    bn_to_k(THE_NUML, THE_NUMR, sqr(2 * k + 1), THE_NUML_K, THE_NUMR_K);
+    view_big_n(THE_NUMR_K);
 end.
