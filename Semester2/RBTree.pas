@@ -21,6 +21,7 @@ var
     begin
         Result := ((node^.r = nil) and (node^.l = nil))
     end;
+
     function getMax(root: RBNodeP): RBNodeP;
     begin
         if ((root^.r^.r = nil) and (root^.r^.l = nil)) then
@@ -104,9 +105,7 @@ var
     var
         uncle, parent: RBNodeP;
     begin
-        if ((root^.color = RED) and (root^.parent = nil)) then
-            root^.color := BLACK
-        else if ((root^.color = RED) and (root^.parent^.color = RED)) then
+        if ((root^.color = RED) and (root^.parent^.color = RED)) then
         begin
             if (root^.parent^.parent = nil) then
                 root^.parent^.color := BLACK
@@ -120,11 +119,19 @@ var
                     uncle^.parent^.color := RED;
                 end
                 else
-                    RotateInsert(root);
+                begin
+                    if (root^.val < root^.parent^.val) then
+                        _LeftRotateInsert(root^.parent^.parent)
+                    else
+                    begin
+                        _RightRotateInsert(root^.parent);
+                        _LeftRotateInsert(root^.parent^.parent);
+                    end;
+                end;
             end;
         end;
-        if (root^.parent <> nil) then
-            FixAfterInsert(root^.parent);
+        if (root^.parent^.parent <> nil) then
+            FixAfterInsert(root^.parent^.parent);
     end;
 
     procedure InitNode(var root, fict: RBNodeP; value: integer);
@@ -161,7 +168,9 @@ var
 
     function InsertNode(var root, node, parent: RBNodeP): RBNodeP;
     begin
-        if ((root^.r = nil) and (root^.l = nil)) then
+        if (root = nil) then
+            root := node
+        else if ((root^.r = nil) and (root^.l = nil)) then
         begin
             if (root <> parent) then
                 node^.parent := parent;
@@ -187,22 +196,16 @@ var
         value: integer;
     begin
         writeln('Создадим дерево');
-        writeln('Введите значение, либо -1, чтобы закончить');
-        write('---> ');
-        readln(value);
-        if (value <> -1) then
-            InitNode(RBTree, fictNode, value);
-        write('---> ');
-        readln(value);
+        NewNode := RBTree;
         while (value <> -1) do
         begin
+            write('---> ');
+            readln(value);
+            if (value = -1) then break;
             InitNode(NewNode, FictNode, value);
             InsertNode(RBTree, NewNode, RBTree);
             FixAfterInsert(NewNode);
             viewTree(RBTree, 0);
-            writeln;
-            write('---> ');
-            readln(value);
         end;
         Result := RBTree;
     end;
@@ -229,7 +232,7 @@ var
     
     procedure CheckAfterDelete(node: RBNodeP);
     var
-       bro, grandpa: RBNodeP;
+        bro, grandpa: RBNodeP;
     begin
         if (node^.val > node^.parent^.val) then
             bro := node^.parent^.l
