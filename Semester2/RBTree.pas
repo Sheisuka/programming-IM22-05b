@@ -21,6 +21,16 @@ var
     begin
         Result := ((node^.r = nil) and (node^.l = nil))
     end;
+    
+    function GetBH(root: RBNodeP; count: integer): integer;
+    begin
+        if (root^.color = BLACK) then   
+            count += 1;
+        if (root^.parent <> nil) then
+            Result := GetBH(root^.parent, count)
+        else
+            Result := count;
+    end;
 
     function getMax(root: RBNodeP): RBNodeP;
     begin
@@ -34,11 +44,12 @@ var
     begin
         if (root^.r <> nil) then
             viewTree(root^.r, indent + 4);
-        if (root^.color = 0) then
-            root^.color := BLACK;
-        textcolor(root^.color);
         if ((root^.l <> nil) and (root^.r <> nil)) then
-            writeln(root^.val:indent);
+        begin
+            textcolor(root^.color);
+            write(root^.val:indent);
+            writeln('(', GetBh(root, 0), ')');
+        end;
         if (root^.l <> nil) then
             viewTree(root^.l, indent + 4);
     end;
@@ -66,10 +77,8 @@ var
         l^.r^.parent := l;
         root^.parent := l^.parent;
         l^.parent := root;
-        l^.color := RED;
         root^.r := l;
         root^.l^.parent := root;
-        root^.color := BLACK;
     end;
 
     procedure _RightRotateInsert(root: RBNodeP);
@@ -87,25 +96,17 @@ var
         r^.l^.parent := r;
         root^.parent := r^.parent;
         r^.parent := root;
-        r^.color := RED;
         root^.l := r;
         root^.r^.parent := root;
-        root^.color := BLACK;
-    end;
-
-    procedure RotateInsert(var root: RBNodeP);
-    begin
-        if (root^.parent^.val < root^.parent^.parent^.val) then
-            _LeftRotateInsert(root^.parent^.parent)
-        else
-            _RightRotateInsert(root^.parent^.parent);
     end;
 
     procedure FixAfterInsert(var root: RBNodeP);
     var
         uncle, parent: RBNodeP;
     begin
-        if ((root^.color = RED) and (root^.parent^.color = RED)) then
+        if ((root^.color = RED) and (root^.parent = nil)) then
+            root^.color := BLACK
+        else if ((root^.color = RED) and (root^.parent^.color = RED)) then
         begin
             if (root^.parent^.parent = nil) then
                 root^.parent^.color := BLACK
@@ -120,18 +121,37 @@ var
                 end
                 else
                 begin
+                    if (root^.val > root^.parent^.parent^.val) then
+                    // правое поддерево
+                        if (root^.val > root^.parent^.val) then
+                        begin
+                            _RightRotateInsert(root^.parent^.parent);
+                            root^.parent^.color := BLACK;
+                            uncle^.parent^.color := RED;
+                        end
+                        else
+                        begin
+                           _LeftRotateInsert(root^.parent);
+                           FixAfterInsert(root);
+                        end
+                    // Левое поддерево
+                    else
                     if (root^.val < root^.parent^.val) then
-                        _LeftRotateInsert(root^.parent^.parent)
+                    begin
+                        _LeftRotateInsert(root^.parent^.parent);
+                        root^.parent^.color := BLACK;
+                        uncle^.parent^.color := RED;
+                    end
                     else
                     begin
-                        _RightRotateInsert(root^.parent);
-                        _LeftRotateInsert(root^.parent^.parent);
+                       _RightRotateInsert(root^.parent);
+                       FixAfterInsert(root);
                     end;
                 end;
             end;
+            if (root^.parent^.parent <> nil) then
+                FixAfterInsert(root^.parent^.parent);
         end;
-        if (root^.parent^.parent <> nil) then
-            FixAfterInsert(root^.parent^.parent);
     end;
 
     procedure InitNode(var root, fict: RBNodeP; value: integer);
@@ -195,14 +215,13 @@ var
         fictNode := GetFictNode();
         value: integer;
     begin
-        writeln('Создадим дерево');
-        NewNode := RBTree;
+        writeln('Создадим дерево случайно');
         while (value <> -1) do
         begin
             write('---> ');
             readln(value);
             if (value = -1) then break;
-            InitNode(NewNode, FictNode, value);
+            InitNode(NewNode, FictNode, Random(0, 100));
             InsertNode(RBTree, NewNode, RBTree);
             FixAfterInsert(NewNode);
             viewTree(RBTree, 0);
@@ -253,6 +272,7 @@ var
         node, child, parent, brother, lilbro, subMax: RBNodeP;
     begin
         node := Search(root, val);
+        if (node <> nil) then
         if (IsFict(node^.r) and IsFict(node^.l) and (node^.color = RED)) then // Случай 1| Дети фиктивные, x - красный
         begin
             if (node^.parent <> nil) then
