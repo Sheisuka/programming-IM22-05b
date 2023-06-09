@@ -227,28 +227,27 @@ var
         Result := RBTree;
     end;
 
-    procedure ReduceBH(node: RBNodeP);
+    procedure ReduceBH(parent, node: RBNodeP);
     var
-        son, son1, son2, parent: RBNodeP;
+        son, son1, son2: RBNodeP;
     begin
-        parent := node^.parent;
-        if (parent <> nil) then
-        begin
-            if (parent^.val < node^.val) then // Рассматриваем правое поддерево node
+        if (parent <> nil) and (not IsFict(node)) then
+            if (node^.val > parent^.val) then // Рассмотрим правое поддерево node
             begin
                 if (parent^.color = RED) then // Случай 2.1| Родитель красный
                 begin
                     if ((node^.l^.color = RED) or (node^.r^.color = RED)) then // Случай 2.1.1| Есть хотя бы один красный сын у узла
                     begin
+                        parent^.color := BLACK;
                         if (node^.l^.color = RED) then
                         begin
-                            parent^.color := BLACK;
                             _LeftRotateInsert(node);
                             _RightRotateInsert(parent);
                         end
                         else
                         begin
-                            parent^.color := BLACK;
+                            node^.color := RED;
+                            node^.l^.color := BLACK;
                             _RightRotateInsert(parent);
                         end;
                     end
@@ -262,39 +261,24 @@ var
                 begin
                     if (node^.color = RED) then // Случай 2.2.1| Узел красный
                     begin
-                        son1 := node^.r;
-                        son2 := node^.l;
-                        if not IsFict(son1) then
-                        begin
-                            if ((son1^.r^.color = RED) or (son1^.l^.color = RED)) then
-                                son := son1
-                            else if not IsFict(son2) then
-                                son := son2;
-                        end
-                        else if not IsFict(son2) then
-                             son := son2;
-                        if son = nil then writeln('ya shas umru');
+                        son := node^.l;
                         if ((son^.l^.color = RED) or (son^.r^.color = RED)) then // Случай 2.2.1.1| Есть ли красный внук у узла
                         begin
-                            son^.r^.color := BLACK;
-                            son^.l^.color := BLACK;
-                            if (son^.val < node^.val) then
-                                _LeftRotateInsert(node);
-                            _RightRotateInsert(parent);
+                             son^.r^.color := BLACK;
+                             son^.l^.color := BLACK;
+                             _LeftRotateInsert(node);
+                             _RightRotateInsert(parent);
                         end
                         else // Случай 2.2.1.2| Нет красного сына у младшего брата
                         begin
-                            if not IsFict(node^.l) then
-                                node^.l^.color := RED
-                            else if not IsFict(node^.r) then
-                                node^.r^.color := RED;
-                            node^.color := BLACK;
+                           son^.color := RED;
+                           node^.color := BLACK;
                             _RightRotateInsert(parent);
                         end;
                     end
                     else // Случай 2.2.2| Узел черный
                     begin
-                        if ((node^.l^.color = RED) or (node^.r^.color = RED)) then //Случай 2.2.2.1| Есть хотя бы один красный сын у узла
+                        if ((node^.l^.color = RED) or (node^.r^.color = RED)) then // Случай 2.2.2.1| Есть хотя бы один красный сын у узла
                         begin
                             if (node^.l^.color = RED) then
                             begin
@@ -302,7 +286,9 @@ var
                                 _LeftRotateInsert(node);
                             end
                             else
+                            begin
                                 node^.r^.color := BLACK;
+                            end;
                             _RightRotateInsert(parent);
                         end
                         else // Случай 2.2.2.2| Нет красных детей у узла
@@ -314,7 +300,7 @@ var
                                 else
                                     node^.parent^.r^.color := RED;
                                 if (node^.parent^.parent <> nil) then
-                                    ReduceBH(node^.parent^.parent);
+                                    ReduceBH(node^.parent^.parent, parent);
                             end;
                         end;
                     end;
@@ -329,13 +315,13 @@ var
                         parent^.color := BLACK;
                         if (node^.r^.color = RED) then
                         begin
-                            parent^.color := BLACK;
                             _RightRotateInsert(node);
                             _LeftRotateInsert(parent);
                         end
                         else
                         begin
-                            parent^.color := BLACK;
+                            node^.color := RED;
+                            node^.l^.color := BLACK;
                             _LeftRotateInsert(parent);
                         end;
                     end
@@ -349,39 +335,24 @@ var
                 begin
                     if (node^.color = RED) then // Случай 2.2.1| Узел красный
                     begin
-                        son1 := node^.r;
-                        son2 := node^.l;
-                        if not IsFict(son1) then
-                        begin
-                            if ((son1^.r^.color = RED) or (son1^.l^.color = RED)) then
-                                son := son1
-                            else if not IsFict(son2) then
-                                son := son2;
-                        end
-                        else if not IsFict(son2) then
-                             son := son2;
-                        if son = nil then writeln('ya shas umru');
+                        son := node^.r;
                         if ((son^.l^.color = RED) or (son^.r^.color = RED)) then // Случай 2.2.1.1| Есть ли красный внук у узла
                         begin
-                            son^.r^.color := BLACK;
-                            son^.l^.color := BLACK;
-                            if (son^.val > node^.val) then
-                                _RightRotateInsert(node);
+                             son^.r^.color := BLACK;
+                             son^.l^.color := BLACK;
+                             _RightRotateInsert(node);
                             _LeftRotateInsert(parent);
                         end
                         else // Случай 2.2.1.2| Нет красного сына у младшего брата
                         begin
-                            if not IsFict(node^.r) then
-                                node^.r^.color := RED
-                            else if not IsFict(node^.l) then
-                                node^.l^.color := RED;
-                            node^.color := BLACK;
+                           son^.color := RED;
+                           node^.color := BLACK;
                             _LeftRotateInsert(parent);
                         end;
                     end
                     else // Случай 2.2.2| Узел черный
                     begin
-                        if ((node^.l^.color = RED) or (node^.r^.color = RED)) then //Случай 2.2.2.1| Есть хотя бы один красный сын у узла
+                        if ((node^.l^.color = RED) or (node^.r^.color = RED)) then // Случай 2.2.2.1| Есть хотя бы один красный сын у узла
                         begin
                             if (node^.l^.color = RED) then
                             begin
@@ -403,14 +374,13 @@ var
                                 else
                                     node^.parent^.r^.color := RED;
                                 if (node^.parent^.parent <> nil) then
-                                    ReduceBH(node^.parent^.parent);
+                                    ReduceBH(node^.parent^.parent, parent);
                             end;
                         end;
                     end;
                 end;
             end;
         end;
-     end;
     
     procedure DeleteNode(root, fictNode: RBNodeP; val: integer);
     var
@@ -436,15 +406,13 @@ var
                 begin
                     parent^.r := FictNode;
                     dispose(node);
-                    parent^.l^.color := RED;
-                    ReduceBH(parent);
+                    ReduceBH(parent, parent^.l);
                 end
                 else
                 begin
                     parent^.l := FictNode;
                     dispose(node);
-                    parent^.r^.color := RED;
-                    ReduceBH(parent);
+                    ReduceBH(parent, parent^.r);
                 end;
             end
             else if (not IsFict(node^.r) and IsFict(node^.l)) or 
