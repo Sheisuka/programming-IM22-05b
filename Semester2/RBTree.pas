@@ -48,7 +48,7 @@ var
         begin
             textcolor(root^.color);
             write(root^.val:indent);
-            writeln('(', getBh(root, 0), ')');
+            writeln('(',getbh(root, 0),')');
         end;
         if (root^.l <> nil) then
             viewTree(root^.l, indent + 4);
@@ -227,173 +227,185 @@ var
         Result := RBTree;
     end;
 
-    procedure ReduceBH(node: RBNodeP); forward;
-
-    procedure CheckAfterDelete(node: RBNodeP);
+    procedure ReduceBH(node: RBNodeP);
     var
-        parent: RBNodeP;
+        son, son1, son2, parent: RBNodeP;
     begin
         parent := node^.parent;
         if (parent <> nil) then
         begin
-            if (node^.val < parent^.val) then
-                ReduceBH(parent^.r)
-            else
-                ReduceBH(parent^.l);
-            if (parent^.parent) <> nil then
-                if (parent^.val > parent^.parent^.val) then
-                    CheckAfterDelete(parent^.parent^.l) 
-                else
-                    CheckAfterDelete(parent^.parent^.r);    
-        end;
-    end;
-
-    procedure ReduceBH(node: RBNodeP);
-    var
-        son, parent: RBNodeP;
-    begin
-        parent := node^.parent;
-        if (parent^.val < node^.val) then // Рассматриваем правое поддерево node
-        begin
-            if (parent^.color = RED) then // Случай 2.1| Родитель красный
+            if (parent^.val < node^.val) then // Рассматриваем правое поддерево node
             begin
-                if ((node^.l^.color = RED) or (node^.r^.color = RED)) then // Случай 2.1.1| Есть хотя бы один красный сын у узла
+                if (parent^.color = RED) then // Случай 2.1| Родитель красный
                 begin
-                    if (node^.l^.color = RED) then
-                    begin
-                        parent^.color := BLACK;
-                        _LeftRotateInsert(node);
-                        _RightRotateInsert(parent);
-                    end
-                    else
-                    begin
-                        parent^.color := BLACK;
-                        _RightRotateInsert(parent);
-                    end;
-                end
-                else //Случай 2.1.2| Нет красного сына
-                begin
-                    parent^.color := BLACK;
-                    node^.color := RED;
-                end;
-            end
-            else // Случай 2.2| Родитель черный
-            begin
-                if (node^.color = RED) then // Случай 2.2.1| Узел красный
-                begin
-                    if not IsFict(node^.r) then
-                        son := node^.r
-                    else
-                        son := node^.l;
-                    if ((son^.l^.color = RED) or (son^.r^.color = RED)) then // Случай 2.2.1.1| Есть ли красный внук у узла
-                    begin
-                        son^.r^.color := BLACK;
-                        son^.l^.color := RED;
-                        if (son^.val < node^.val) then
-                            _LeftRotateInsert(node);
-                        _RightRotateInsert(parent);
-                    end
-                    else // Случай 2.2.1.2| Нет красного сына у младшего брата
-                    begin
-                        if not IsFict(node^.r) then
-                            node^.r^.color := RED;
-                        if not IsFict(node^.l) then
-                            node^.l^.color := RED;
-                        node^.color := BLACK;
-                        _RightRotateInsert(parent);
-                    end;
-                end
-                else // Случай 2.2.2| Узел черный
-                begin
-                    if ((node^.l^.color = RED) or (node^.r^.color = RED)) then //Случай 2.2.2.1| Есть хотя бы один красный сын у узла
+                    if ((node^.l^.color = RED) or (node^.r^.color = RED)) then // Случай 2.1.1| Есть хотя бы один красный сын у узла
                     begin
                         if (node^.l^.color = RED) then
                         begin
-                            node^.l^.color := BLACK;
+                            parent^.color := BLACK;
                             _LeftRotateInsert(node);
-                        end
-                        else
-                            node^.r^.color := BLACK;
-                        _RightRotateInsert(parent);
-                    end
-                    else // Случай 2.2.2.2| Нет красных детей у узла
-                    begin
-                        node^.color := RED;
-                        CheckAfterDelete(node^.parent);
-                    end;
-                end;
-            end;
-        end
-        else // Рассмотрим левое поддерево node
-        begin
-            if (parent^.color = RED) then // Случай 2.1| Родитель красный
-            begin
-                if ((node^.l^.color = RED) or (node^.r^.color = RED)) then // Случай 2.1.1| Есть хотя бы один красный сын у узла
-                begin
-                    parent^.color := BLACK;
-                    if (node^.r^.color = RED) then
-                    begin
-                        parent^.color := BLACK;
-                        _RightRotateInsert(node);
-                        _LeftRotateInsert(parent);
-                    end
-                    else
-                    begin
-                        parent^.color := BLACK;
-                        _LeftRotateInsert(parent);
-                    end;
-                end
-                else //Случай 2.1.2| Нет красного сына
-                begin
-                    parent^.color := BLACK;
-                    node^.color := RED;
-                end;
-            end
-            else // Случай 2.2| Родитель черный
-            begin
-                if (node^.color = RED) then // Случай 2.2.1| Узел красный
-                begin
-                    if not IsFict(node^.r) then
-                        son := node^.r
-                    else
-                        son := node^.l;
-                    if ((son^.l^.color = RED) or (son^.r^.color = RED)) then // Случай 2.2.1.1| Есть ли красный внук у узла
-                    begin
-                        son^.r^.color := BLACK;
-                        son^.l^.color := RED;
-                        if (son^.val > node^.val) then
-                            _RightRotateInsert(node);
-                        _LeftRotateInsert(parent);
-                    end
-                    else // Случай 2.2.1.2| Нет красного сына у младшего брата
-                    begin
-                        if not IsFict(node^.r) then
-                            node^.r^.color := RED;
-                        if not IsFict(node^.l) then
-                            node^.l^.color := RED;
-                        node^.color := BLACK;
-                        _LeftRotateInsert(parent);
-                    end;
-                end
-                else // Случай 2.2.2| Узел черный
-                begin
-                    if ((node^.l^.color = RED) or (node^.r^.color = RED)) then //Случай 2.2.2.1| Есть хотя бы один красный сын у узла
-                    begin
-                        if (node^.l^.color = RED) then
-                        begin
-                            node^.l^.color := BLACK;
+                            _RightRotateInsert(parent);
                         end
                         else
                         begin
-                            node^.r^.color := BLACK;
-                            _RightRotateInsert(node);
+                            parent^.color := BLACK;
+                            _RightRotateInsert(parent);
                         end;
-                        _LeftRotateInsert(parent);
                     end
-                    else // Случай 2.2.2.2| Нет красных детей у узла
+                    else //Случай 2.1.2| Нет красного сына
                     begin
+                        parent^.color := BLACK;
                         node^.color := RED;
-                        CheckAfterDelete(node^.parent);
+                    end;
+                end
+                else // Случай 2.2| Родитель черный
+                begin
+                    if (node^.color = RED) then // Случай 2.2.1| Узел красный
+                    begin
+                        son1 := node^.r;
+                        son2 := node^.l;
+                        if not IsFict(son1) then
+                        begin
+                            if ((son1^.r^.color = RED) or (son1^.l^.color = RED)) then
+                                son := son1
+                            else if not IsFict(son2) then
+                                son := son2;
+                        end
+                        else if not IsFict(son2) then
+                             son := son2;
+                        if son = nil then writeln('ya shas umru');
+                        if ((son^.l^.color = RED) or (son^.r^.color = RED)) then // Случай 2.2.1.1| Есть ли красный внук у узла
+                        begin
+                            son^.r^.color := BLACK;
+                            son^.l^.color := BLACK;
+                            if (son^.val < node^.val) then
+                                _LeftRotateInsert(node);
+                            _RightRotateInsert(parent);
+                        end
+                        else // Случай 2.2.1.2| Нет красного сына у младшего брата
+                        begin
+                            if not IsFict(node^.l) then
+                                node^.l^.color := RED
+                            else if not IsFict(node^.r) then
+                                node^.r^.color := RED;
+                            node^.color := BLACK;
+                            _RightRotateInsert(parent);
+                        end;
+                    end
+                    else // Случай 2.2.2| Узел черный
+                    begin
+                        if ((node^.l^.color = RED) or (node^.r^.color = RED)) then //Случай 2.2.2.1| Есть хотя бы один красный сын у узла
+                        begin
+                            if (node^.l^.color = RED) then
+                            begin
+                                node^.l^.color := BLACK;
+                                _LeftRotateInsert(node);
+                            end
+                            else
+                                node^.r^.color := BLACK;
+                            _RightRotateInsert(parent);
+                        end
+                        else // Случай 2.2.2.2| Нет красных детей у узла
+                        begin
+                            if (node^.parent <> nil) then
+                            begin
+                                if (node^.val > node^.parent^.val) then
+                                    node^.parent^.l^.color := RED
+                                else
+                                    node^.parent^.r^.color := RED;
+                                if (node^.parent^.parent <> nil) then
+                                    ReduceBH(node^.parent^.parent);
+                            end;
+                        end;
+                    end;
+                end;
+            end
+            else // Рассмотрим левое поддерево node
+            begin
+                if (parent^.color = RED) then // Случай 2.1| Родитель красный
+                begin
+                    if ((node^.l^.color = RED) or (node^.r^.color = RED)) then // Случай 2.1.1| Есть хотя бы один красный сын у узла
+                    begin
+                        parent^.color := BLACK;
+                        if (node^.r^.color = RED) then
+                        begin
+                            parent^.color := BLACK;
+                            _RightRotateInsert(node);
+                            _LeftRotateInsert(parent);
+                        end
+                        else
+                        begin
+                            parent^.color := BLACK;
+                            _LeftRotateInsert(parent);
+                        end;
+                    end
+                    else //Случай 2.1.2| Нет красного сына
+                    begin
+                        parent^.color := BLACK;
+                        node^.color := RED;
+                    end;
+                end
+                else // Случай 2.2| Родитель черный
+                begin
+                    if (node^.color = RED) then // Случай 2.2.1| Узел красный
+                    begin
+                        son1 := node^.r;
+                        son2 := node^.l;
+                        if not IsFict(son1) then
+                        begin
+                            if ((son1^.r^.color = RED) or (son1^.l^.color = RED)) then
+                                son := son1
+                            else if not IsFict(son2) then
+                                son := son2;
+                        end
+                        else if not IsFict(son2) then
+                             son := son2;
+                        if son = nil then writeln('ya shas umru');
+                        if ((son^.l^.color = RED) or (son^.r^.color = RED)) then // Случай 2.2.1.1| Есть ли красный внук у узла
+                        begin
+                            son^.r^.color := BLACK;
+                            son^.l^.color := BLACK;
+                            if (son^.val > node^.val) then
+                                _RightRotateInsert(node);
+                            _LeftRotateInsert(parent);
+                        end
+                        else // Случай 2.2.1.2| Нет красного сына у младшего брата
+                        begin
+                            if not IsFict(node^.r) then
+                                node^.r^.color := RED
+                            else if not IsFict(node^.l) then
+                                node^.l^.color := RED;
+                            node^.color := BLACK;
+                            _LeftRotateInsert(parent);
+                        end;
+                    end
+                    else // Случай 2.2.2| Узел черный
+                    begin
+                        if ((node^.l^.color = RED) or (node^.r^.color = RED)) then //Случай 2.2.2.1| Есть хотя бы один красный сын у узла
+                        begin
+                            if (node^.l^.color = RED) then
+                            begin
+                                node^.l^.color := BLACK;
+                            end
+                            else
+                            begin
+                                node^.r^.color := BLACK;
+                                _RightRotateInsert(node);
+                            end;
+                            _LeftRotateInsert(parent);
+                        end
+                        else // Случай 2.2.2.2| Нет красных детей у узла
+                        begin
+                            if (node^.parent <> nil) then
+                            begin
+                                if (node^.val > node^.parent^.val) then
+                                    node^.parent^.l^.color := RED
+                                else
+                                    node^.parent^.r^.color := RED;
+                                if (node^.parent^.parent <> nil) then
+                                    ReduceBH(node^.parent^.parent);
+                            end;
+                        end;
                     end;
                 end;
             end;
@@ -424,13 +436,15 @@ var
                 begin
                     parent^.r := FictNode;
                     dispose(node);
-                    ReduceBH(parent^.l) 
+                    parent^.l^.color := RED;
+                    ReduceBH(parent);
                 end
                 else
                 begin
                     parent^.l := FictNode;
                     dispose(node);
-                    ReduceBH(parent^.r);
+                    parent^.r^.color := RED;
+                    ReduceBH(parent);
                 end;
             end
             else if (not IsFict(node^.r) and IsFict(node^.l)) or 
