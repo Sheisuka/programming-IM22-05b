@@ -48,7 +48,7 @@ var
         begin
             textcolor(root^.color);
             write(root^.val:indent);
-            writeln('(', GetBh(root, 0), ')');
+            writeln('(', getBh(root, 0), ')');
         end;
         if (root^.l <> nil) then
             viewTree(root^.l, indent + 4);
@@ -117,7 +117,7 @@ var
                 begin
                     uncle^.color := BLACK;
                     root^.parent^.color := BLACK;
-                    uncle^.parent^.color := RED;
+                    root^.parent^.parent^.color := RED;
                 end
                 else // Дядя черный
                 begin
@@ -125,31 +125,31 @@ var
                         if (root^.val > root^.parent^.val) then // Новый узел - правый сын родителя
                         begin
                             root^.parent^.color := BLACK;
-                            uncle^.parent^.color := RED;
+                            root^.parent^.parent^.color := RED;
                             _RightRotateInsert(root^.parent^.parent);
                         end
                         else
                         begin
                             _LeftRotateInsert(root^.parent); // Переворотом сводим к случаю выше
-                            FixAfterInsert(root^.r); // Проверить
+                            FixAfterInsert(root); // Проверить
                         end
                     else // Левое поддерево
                         if (root^.val < root^.parent^.val) then // Новый узел - левый сын родителя
                         begin
                             root^.parent^.color := BLACK;
-                            uncle^.parent^.color := RED;
+                            root^.parent^.parent^.color := RED;
                             _LeftRotateInsert(root^.parent^.parent);
                         end
                         else
                         begin
                             _RightRotateInsert(root^.parent); // Переворотом сводим к случаю выше
-                            FixAfterInsert(root^.l); // Проверить
+                            FixAfterInsert(root); // Проверить
                         end;
                 end;
             end;
-            if (root^.parent <> nil) then
-                FixAfterInsert(root^.parent);
         end;
+        if (root^.parent <> nil) then
+            FixAfterInsert(root^.parent);
     end;
 
     procedure InitNode(var root, fict: RBNodeP; value: integer);
@@ -240,7 +240,11 @@ var
                 ReduceBH(parent^.r)
             else
                 ReduceBH(parent^.l);
-            CheckAfterDelete(parent);
+            if (parent^.parent) <> nil then
+                if (parent^.val > parent^.parent^.val) then
+                    CheckAfterDelete(parent^.parent^.l) 
+                else
+                    CheckAfterDelete(parent^.parent^.r);    
         end;
     end;
 
@@ -255,14 +259,19 @@ var
             begin
                 if ((node^.l^.color = RED) or (node^.r^.color = RED)) then // Случай 2.1.1| Есть хотя бы один красный сын у узла
                 begin
-                    if (node^.r^.color = RED) then
-                        _RightRotateInsert(node)
-                    else
+                    if (node^.l^.color = RED) then
+                    begin
+                        parent^.color := BLACK;
                         _LeftRotateInsert(node);
-                    _RightRotateInsert(parent);
-                    parent^.color := BLACK;
+                        _RightRotateInsert(parent);
+                    end
+                    else
+                    begin
+                        parent^.color := BLACK;
+                        _RightRotateInsert(parent);
+                    end;
                 end
-                else //Случай 2.1.2| Нет красного брата
+                else //Случай 2.1.2| Нет красного сына
                 begin
                     parent^.color := BLACK;
                     node^.color := RED;
@@ -280,15 +289,16 @@ var
                     begin
                         son^.r^.color := BLACK;
                         son^.l^.color := RED;
-                        if (son^.val > node^.val) then
-                            _RightRotateInsert(node)
-                        else
+                        if (son^.val < node^.val) then
                             _LeftRotateInsert(node);
                         _RightRotateInsert(parent);
                     end
                     else // Случай 2.2.1.2| Нет красного сына у младшего брата
                     begin
-                        son^.color := RED;
+                        if not IsFict(node^.r) then
+                            node^.r^.color := RED;
+                        if not IsFict(node^.l) then
+                            node^.l^.color := RED;
                         node^.color := BLACK;
                         _RightRotateInsert(parent);
                     end;
@@ -299,14 +309,11 @@ var
                     begin
                         if (node^.l^.color = RED) then
                         begin
-                            node^.l^.color = BLACK;
+                            node^.l^.color := BLACK;
                             _LeftRotateInsert(node);
                         end
                         else
-                        begin
-                            node^.r^.color = BLACK;
-                            _RightRotateInsert(node);
-                        end
+                            node^.r^.color := BLACK;
                         _RightRotateInsert(parent);
                     end
                     else // Случай 2.2.2.2| Нет красных детей у узла
@@ -315,6 +322,7 @@ var
                         CheckAfterDelete(node^.parent);
                     end;
                 end;
+            end;
         end
         else // Рассмотрим левое поддерево node
         begin
@@ -322,14 +330,20 @@ var
             begin
                 if ((node^.l^.color = RED) or (node^.r^.color = RED)) then // Случай 2.1.1| Есть хотя бы один красный сын у узла
                 begin
-                    if (node^.r^.color = RED) then
-                        _RightRotateInsert(node)
-                    else
-                        _LeftRotateInsert(node);
-                    _LeftRotateInsert(parent);
                     parent^.color := BLACK;
+                    if (node^.r^.color = RED) then
+                    begin
+                        parent^.color := BLACK;
+                        _RightRotateInsert(node);
+                        _LeftRotateInsert(parent);
+                    end
+                    else
+                    begin
+                        parent^.color := BLACK;
+                        _LeftRotateInsert(parent);
+                    end;
                 end
-                else //Случай 2.1.2| Нет красного брата
+                else //Случай 2.1.2| Нет красного сына
                 begin
                     parent^.color := BLACK;
                     node^.color := RED;
@@ -348,14 +362,15 @@ var
                         son^.r^.color := BLACK;
                         son^.l^.color := RED;
                         if (son^.val > node^.val) then
-                            _RightRotateInsert(node)
-                        else
-                            _LeftRotateInsert(node);
+                            _RightRotateInsert(node);
                         _LeftRotateInsert(parent);
                     end
                     else // Случай 2.2.1.2| Нет красного сына у младшего брата
                     begin
-                        son^.color := RED;
+                        if not IsFict(node^.r) then
+                            node^.r^.color := RED;
+                        if not IsFict(node^.l) then
+                            node^.l^.color := RED;
                         node^.color := BLACK;
                         _LeftRotateInsert(parent);
                     end;
@@ -366,14 +381,13 @@ var
                     begin
                         if (node^.l^.color = RED) then
                         begin
-                            node^.l^.color = BLACK;
-                            _LeftRotateInsert(node);
+                            node^.l^.color := BLACK;
                         end
                         else
                         begin
-                            node^.r^.color = BLACK;
+                            node^.r^.color := BLACK;
                             _RightRotateInsert(node);
-                        end
+                        end;
                         _LeftRotateInsert(parent);
                     end
                     else // Случай 2.2.2.2| Нет красных детей у узла
@@ -384,6 +398,7 @@ var
                 end;
             end;
         end;
+     end;
     
     procedure DeleteNode(root, fictNode: RBNodeP; val: integer);
     var
@@ -426,6 +441,7 @@ var
                 else
                     child := node^.r;
                 child^.color := BLACK;
+                child^.parent := parent;
                 if (node^.val > node^.parent^.val) then
                     parent^.r := child
                 else
