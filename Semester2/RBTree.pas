@@ -131,8 +131,8 @@ var
                         end
                         else
                         begin
-                           _LeftRotateInsert(root^.parent);
-                           FixAfterInsert(root);
+                            _LeftRotateInsert(root^.parent);
+                            FixAfterInsert(root);
                         end
                     // Левое поддерево
                     else
@@ -144,13 +144,13 @@ var
                     end
                     else
                     begin
-                       _RightRotateInsert(root^.parent);
-                       FixAfterInsert(root);
+                        _RightRotateInsert(root^.parent);
+                        FixAfterInsert(root);
                     end;
                 end;
             end;
-            if (root^.parent^.parent <> nil) then
-                FixAfterInsert(root^.parent^.parent);
+            if (root^.parent <> nil) then
+                FixAfterInsert(root^.parent);
         end;
     end;
 
@@ -233,12 +233,12 @@ var
     var
         parent, bro: RBNodeP;
     begin
-        if (node^.color = BLACK) then
+        if ((node^.color = BLACK) and not IsFict(node)) then
         begin
             node^.color := RED;
-            FixAfterInsert(node);
             FixAfterInsert(node^.l);
             FixAfterInsert(node^.r);
+            FixAfterInsert(node);
         end
         else
         begin
@@ -261,7 +261,7 @@ var
         grandpa := node^.parent^.parent;
         if (grandpa <> nil) then
             if (not IsFict(grandpa)) then
-                if (node^.val < grandpa^.val) then
+                if (node^.parent^.val < grandpa^.val) then
                     CheckAfterDelete(grandpa^.r)
                 else
                     CheckAfterDelete(grandpa^.l);
@@ -294,7 +294,7 @@ var
             begin
                 if ((brother^.r^.color = RED) or (brother^.l^.color = RED)) then //Случай 2.1.1| Есть хотя бы один красный сын у брата
                 begin
-                    if (brother^.r^.color = RED) then
+                    if (brother^.r^.color = RED) then // ПРОВЕРИТЬ
                         _RightRotateInsert(brother)
                     else
                         _LeftRotateInsert(brother);
