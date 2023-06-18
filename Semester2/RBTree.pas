@@ -419,7 +419,7 @@ var
         if (node <> nil) then
         begin
             parent := node^.parent;
-            if (parent = nil) and IsFict(node^.r) and IsFict(node^.l) then
+            if (parent = nil) and IsFict(node^.r) and IsFict(node^.l) then // Удаляется пустой корень
             begin
                 dispose(root);
                 writeln('Удалено всё дерево');
@@ -458,13 +458,21 @@ var
                     child := node^.r;
                 child^.color := BLACK;
                 child^.parent := parent;
-                if (node^.val > node^.parent^.val) then
-                    parent^.r := child
-                else
-                    parent^.l := child;
-                dispose(node);
+                if (parent <> nil) then // Если не в корне
+                begin
+                    if (node^.val > parent^.val) then
+                        parent^.r := child
+                    else
+                        parent^.l := child;
+                    dispose(node);
+                end
+                else // Если в корне
+                begin
+                    node^ := child^;
+                    dispose(child);
+                end;
             end
-            else if not ((IsFict(node^.r)) and (IsFict(node^.l))) then // Случай 4 | Оба ребенка не фиктивные
+            else if not ((IsFict(node^.r)) or (IsFict(node^.l))) then // Случай 4 | Оба ребенка не фиктивные
             begin
                 subMax := getMax(node^.l);
                 node^.val := subMax^.val;
